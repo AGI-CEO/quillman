@@ -4,12 +4,12 @@ API routes for transcription, language model generation and text-to-speech.
 """
 
 import json
+import requests
 from pathlib import Path
 
 from modal import Mount, asgi_app
 
 from .common import stub
-from .llm_vicuna import Vicuna
 from .transcriber import Whisper
 from .tts import Tortoise
 
@@ -17,6 +17,8 @@ static_path = Path(__file__).with_name("frontend").resolve()
 
 PUNCTUATION = [".", "?", "!", ":", ";", "*"]
 
+# Define your API endpoint
+LLM_API_ENDPOINT = 'http://your-api-endpoint.com'
 
 @stub.function(
     mounts=[Mount.from_local_dir(static_path, remote_path="/assets")],
@@ -31,7 +33,6 @@ def web():
 
     web_app = FastAPI()
     transcriber = Whisper()
-    llm = Vicuna()
     tts = Tortoise()
 
     @web_app.post("/transcribe")
@@ -46,7 +47,6 @@ def web():
         tts_enabled = body["tts"]
 
         if "noop" in body:
-            llm.generate.spawn("")
             # Warm up 3 containers for now.
             if tts_enabled:
                 for _ in range(3):
@@ -69,7 +69,12 @@ def web():
         def gen():
             sentence = ""
 
-            for segment in llm.generate.call(body["input"], body["history"]):
+            # Make a POST request to your LLM API endpoint
+            response = requests.post(LLM_API_ENDPOINT, json={'input': body["input"], 'history': body["history"]})
+            response.raise_for_status()
+            segments = response.json()
+
+            for segment in segments:
                 yield {"type": "text", "value": segment}
                 sentence += segment
 
