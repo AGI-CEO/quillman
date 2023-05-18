@@ -11,14 +11,14 @@ from modal import Mount, asgi_app
 
 from .common import stub
 from .transcriber import Whisper
-from .tts import Tortoise
+from .tts import ElevenLabs  # Changed from Tortoise
 
 static_path = Path(__file__).with_name("frontend").resolve()
 
 PUNCTUATION = [".", "?", "!", ":", ";", "*"]
 
 # Define your API endpoint
-LLM_API_ENDPOINT = 'http://your-api-endpoint.com'
+LLM_API_ENDPOINT = 'https://flowise--jetblaise.repl.co/api/v1/prediction/9c9a7f5b-c8d6-4f52-b0a7-b56d7b8666a6'
 
 @stub.function(
     mounts=[Mount.from_local_dir(static_path, remote_path="/assets")],
@@ -33,7 +33,7 @@ def web():
 
     web_app = FastAPI()
     transcriber = Whisper()
-    tts = Tortoise()
+    tts = ElevenLabs("Voice Name")  # Changed from Tortoise
 
     @web_app.post("/transcribe")
     async def transcribe(request: Request):
